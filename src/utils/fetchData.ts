@@ -1,10 +1,10 @@
-import connectDB from './db';
+import { connectToDatabase } from './db';
 import Data from '../models/Data';
 
 export async function fetchData(query = {}, options = {}) {
   try {
     // Connect to the database
-    await connectDB();
+    const db = await connectToDatabase();
 
     // Fetch data based on query
     const data = await Data.find(query, null, options);
@@ -20,7 +20,7 @@ export async function fetchData(query = {}, options = {}) {
 // Fetch single document by ID
 export async function fetchDataById(id: string) {
   try {
-    await connectDB();
+    await connectToDatabase();
     const data = await Data.findById(id);
     return JSON.parse(JSON.stringify(data));
   } catch (error) {
@@ -32,7 +32,7 @@ export async function fetchDataById(id: string) {
 // Create new document
 export async function createData(data: any) {
   try {
-    await connectDB();
+    await connectToDatabase();
     const newData = new Data(data);
     await newData.save();
     return JSON.parse(JSON.stringify(newData));
@@ -45,7 +45,7 @@ export async function createData(data: any) {
 // Update document
 export async function updateData(id: string, data: any) {
   try {
-    await connectDB();
+    await connectToDatabase();
     const updatedData = await Data.findByIdAndUpdate(id, data, { new: true });
     return JSON.parse(JSON.stringify(updatedData));
   } catch (error) {
@@ -57,7 +57,7 @@ export async function updateData(id: string, data: any) {
 // Delete document
 export async function deleteData(id: string) {
   try {
-    await connectDB();
+    await connectToDatabase();
     await Data.findByIdAndDelete(id);
     return { success: true };
   } catch (error) {

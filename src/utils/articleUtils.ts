@@ -1,10 +1,10 @@
-import connectDB from './db';
+import { connectToDatabase } from './db';
 import Article from '../models/Article';
 
 export async function fetchArticles(query = {}, options = {}) {
   try {
-    await connectDB();
-    const articles = await Article.find(query, null, options).sort({ publishDate: -1 });
+    const db = await connectToDatabase();
+    const articles = await db.collection('articles').find(query).sort({ publishDate: -1 }).toArray();
     return JSON.parse(JSON.stringify(articles));
   } catch (error) {
     console.error('Error fetching articles:', error);
@@ -14,10 +14,9 @@ export async function fetchArticles(query = {}, options = {}) {
 
 export async function createArticle(articleData: any) {
   try {
-    await connectDB();
-    const article = new Article(articleData);
-    await article.save();
-    return JSON.parse(JSON.stringify(article));
+    const db = await connectToDatabase();
+    const result = await db.collection('articles').insertOne(articleData);
+    return JSON.parse(JSON.stringify(result));
   } catch (error) {
     console.error('Error creating article:', error);
     throw error;

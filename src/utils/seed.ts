@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import connectDB from './db';
+import { connectToDatabase } from './db';
 import Article from '../models/Article';
 import { recommendedArticles } from '../data/mockData'; // Move your existing mock data to a separate file
 import config from '../config';
@@ -10,13 +10,14 @@ dotenv.config();
 async function seed() {
   try {
     console.log('Connecting to MongoDB...');
-    await connectDB();
+    const db = await connectToDatabase();
     
     console.log('Clearing existing articles...');
-    await Article.deleteMany({});
+    const collection = db.collection('articles');
+    await collection.deleteMany({});
     
     console.log('Inserting new articles...');
-    await Article.insertMany(recommendedArticles.map(article => ({
+    await collection.insertMany(recommendedArticles.map(article => ({
       ...article,
       publishDate: new Date(article.publishDate)
     })));
