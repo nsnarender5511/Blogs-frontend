@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const db = await connectToDatabase();
     const articles = await db.collection('blogs').find({}).toArray();
-    console.log("articles : ", articles);
+    //console.log("articles : ", articles);
     
     return NextResponse.json(articles);
   } catch (error) {
