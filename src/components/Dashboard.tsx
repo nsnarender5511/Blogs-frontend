@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+"use client"
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -29,22 +31,98 @@ import { Statistics } from "@/components/Statistics";
 import { ReadingHistory } from "@/components/ReadingHistory";
 import { formatDistanceToNow } from 'date-fns';
 import { Progress } from "@/components/ui/progress";
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { NavigationMenu, NavigationMenuList, NavigationMenuItem, NavigationMenuTrigger, NavigationMenuContent, NavigationMenuLink } from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
+import { articleApi } from '@/services/api';
+import { useTheme } from "next-themes";
+
+interface Article {
+  _id: string;
+  title: string;
+  link: string;
+  image: string;
+  readTime: number;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  tags: string[];
+  createdAt: string;
+  excerpt: string;
+  author: {
+    name: string;
+    avatar: string;
+  };
+  publishDate: string;
+  saves: number;
+}
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const { theme } = useTheme();
 
-  // Simulate loading
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
+  const isDarkMode = theme === "dark";
+
+  const transform_article = (articles: any[]) => {
+    const difficulties: Array<'beginner' | 'intermediate' | 'advanced'> = ['beginner', 'intermediate', 'advanced'];
+    const sampleTags = ['Web Dev', 'Architecture', 'Backend', 'Frontend', 'AI', 'ML', 'DevOps', 'Cloud'];
+    
+    return articles.map((article) => {
+      // Ensure title is a string
+      const title = typeof article.title === 'object' ? 
+        article.title.category || article.title.toString() : 
+        article.title || 'Untitled Article';
+
+      // Ensure other fields are properly formatted
+      return {
+        _id: article._id.toString(),
+        title: title,
+        link: article.blog_url || '#',
+        image: article.image_url || 'https://images.unsplash.com/photo-1587620962725-abab7fe55159',
+        readTime: Math.floor(Math.random() * 20) + 5,
+        difficulty: difficulties[Math.floor(Math.random() * difficulties.length)],
+        tags: sampleTags.sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 4) + 1),
+        createdAt: new Date(article.created_at).toISOString(),
+        excerpt: typeof article.additional_info === 'string' ? 
+          article.additional_info : 
+          'Explore this insightful article about technology and development.',
+        author: {
+          name: Array.isArray(article.authors) && article.authors.length > 0 ? 
+            article.authors[0].toString() : 
+            'Anonymous Author',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${
+            Array.isArray(article.authors) && article.authors.length > 0 ? 
+              article.authors[0].toString() : 
+              'anonymous'
+          }`
+        },
+        publishDate: article.date ? 
+          new Date(article.date).toISOString() : 
+          new Date(article.created_at).toISOString(),
+        saves: Math.floor(Math.random() * 100) + 1
+      };
+    });
+  }
+
+  useEffect(() => {
+    const fetchRecommendedArticles = async () => {
+      try {
+        setIsLoading(true);
+        const articles = await articleApi.fetchArticles();
+        const transformedArticles = transform_article(articles);
+        setRecommendedArticles(transformedArticles);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching articles:', err);
+        setError('Failed to fetch articles');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecommendedArticles();
   }, []);
 
   // Get greeting based on time of day
@@ -56,460 +134,6 @@ const Dashboard = () => {
   };
 
   // Mock data with more details and images
-  const recommendedArticles = [
-    {
-      id: 1,
-      title: "Understanding React Performance",
-      author: "Sarah Chen",
-      readTime: "8 min",
-      difficulty: "Intermediate",
-      excerpt: "Deep dive into React rendering optimization and performance best practices",
-      image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&auto=format&fit=crop&q=60",
-      tags: ["React", "Performance", "Web Dev"],
-      likes: 234,
-      saves: 56,
-      publishDate: "2024-01-05",
-      comments: 45,
-      link: "https://react.dev/learn/render-and-commit"
-    },
-    {
-      id: 2,
-      title: "The Future of AI in 2025",
-      author: "James Wilson",
-      readTime: "12 min",
-      difficulty: "Advanced",
-      excerpt: "Exploring upcoming trends and breakthroughs in artificial intelligence",
-      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop&q=60",
-      tags: ["AI", "Technology", "Future"],
-      likes: 456,
-      saves: 89,
-      publishDate: "2024-01-02",
-      comments: 78,
-      link: "https://openai.com/blog"
-    },
-    {
-      id: 3,
-      title: "Basics of System Design",
-      author: "Maya Patel",
-      readTime: "15 min",
-      difficulty: "Beginner",
-      excerpt: "Foundation concepts for building scalable software systems",
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&auto=format&fit=crop&q=60",
-      tags: ["Architecture", "Backend", "Design"],
-      likes: 345,
-      saves: 67,
-      publishDate: "2024-01-01",
-      comments: 34,
-      link: "https://github.com/donnemartin/system-design-primer"
-    },
-    {
-      id: 4,
-      title: "Machine Learning Fundamentals",
-      author: "Alex Thompson",
-      readTime: "10 min",
-      difficulty: "Intermediate",
-      excerpt: "Essential concepts and techniques in modern machine learning",
-      image: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?w=800&auto=format&fit=crop&q=60",
-      tags: ["ML", "Data Science", "AI"],
-      likes: 567,
-      saves: 123,
-      publishDate: "2023-12-28",
-      comments: 89,
-      link: "https://www.tensorflow.org/tutorials"
-    },
-    {
-      id: 5,
-      title: "Advanced TypeScript Patterns",
-      author: "Lisa Kumar",
-      readTime: "14 min",
-      difficulty: "Advanced",
-      excerpt: "Exploring advanced TypeScript features and design patterns for large applications",
-      image: "https://images.unsplash.com/photo-1580894894513-541e068a3e2b?w=800&auto=format&fit=crop&q=60",
-      tags: ["TypeScript", "JavaScript", "Programming"],
-      likes: 678,
-      saves: 234,
-      publishDate: "2023-12-25",
-      comments: 56,
-      link: "https://www.typescriptlang.org/docs/handbook/advanced-types.html"
-    },
-    {
-      id: 6,
-      title: "Cloud Native Architecture",
-      author: "David Martinez",
-      readTime: "18 min",
-      difficulty: "Advanced",
-      excerpt: "Building resilient and scalable applications using cloud-native principles",
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&auto=format&fit=crop&q=60",
-      tags: ["Cloud", "Architecture", "DevOps"],
-      likes: 789,
-      saves: 167,
-      publishDate: "2023-12-22",
-      comments: 92,
-      link: "https://kubernetes.io/docs/concepts/overview/"
-    },
-    {
-      id: 7,
-      title: "CSS Grid Mastery",
-      author: "Emma Brown",
-      readTime: "9 min",
-      difficulty: "Intermediate",
-      excerpt: "Master modern CSS layouts with Grid and Flexbox combinations",
-      image: "https://images.unsplash.com/photo-1507721999472-8ed4421c4af2?w=800&auto=format&fit=crop&q=60",
-      tags: ["CSS", "Web Design", "Frontend"],
-      likes: 432,
-      saves: 98,
-      publishDate: "2023-12-20",
-      comments: 67,
-      link: "https://css-tricks.com/snippets/css/complete-guide-grid/"
-    },
-    {
-      id: 8,
-      title: "GraphQL Best Practices",
-      author: "Tom Anderson",
-      readTime: "11 min",
-      difficulty: "Intermediate",
-      excerpt: "Implementing efficient GraphQL APIs with proper caching and security",
-      image: "https://images.unsplash.com/photo-1522542550221-31fd19575a2d?w=800&auto=format&fit=crop&q=60",
-      tags: ["GraphQL", "API", "Backend"],
-      likes: 345,
-      saves: 87,
-      publishDate: "2023-12-18",
-      comments: 45,
-      link: "https://graphql.org/learn/best-practices/"
-    },
-    {
-      id: 9,
-      title: "Web Security Fundamentals",
-      author: "Rachel Kim",
-      readTime: "16 min",
-      difficulty: "Intermediate",
-      excerpt: "Essential security concepts every web developer should know",
-      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&auto=format&fit=crop&q=60",
-      tags: ["Security", "Web Dev", "Best Practices"],
-      likes: 890,
-      saves: 245,
-      publishDate: "2023-12-15",
-      comments: 123,
-      link: "https://owasp.org/www-project-top-ten/"
-    },
-    {
-      id: 10,
-      title: "Docker for Beginners",
-      author: "Michael Chang",
-      readTime: "13 min",
-      difficulty: "Beginner",
-      excerpt: "Getting started with containerization using Docker",
-      image: "https://images.unsplash.com/photo-1605745341112-85968b19335b?w=800&auto=format&fit=crop&q=60",
-      tags: ["Docker", "DevOps", "Containers"],
-      likes: 567,
-      saves: 178,
-      publishDate: "2023-12-12",
-      comments: 88,
-      link: "https://docs.docker.com/get-started/"
-    },
-    {
-      id: 11,
-      title: "Next.js 14 Features",
-      author: "Nina Rodriguez",
-      readTime: "10 min",
-      difficulty: "Intermediate",
-      excerpt: "Exploring the latest features and improvements in Next.js 14",
-      image: "https://images.unsplash.com/photo-1618477247222-acbdb0e159b3?w=800&auto=format&fit=crop&q=60",
-      tags: ["Next.js", "React", "Frontend"],
-      likes: 678,
-      saves: 198,
-      publishDate: "2023-12-10",
-      comments: 76,
-      link: "https://nextjs.org/docs"
-    },
-    {
-      id: 12,
-      title: "Rust for JavaScript Developers",
-      author: "Chris Peters",
-      readTime: "20 min",
-      difficulty: "Advanced",
-      excerpt: "Learning Rust programming language from a JavaScript developer's perspective",
-      image: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=800&auto=format&fit=crop&q=60",
-      tags: ["Rust", "JavaScript", "Programming"],
-      likes: 789,
-      saves: 234,
-      publishDate: "2023-12-08",
-      comments: 145,
-      link: "https://rustup.rs"
-    },
-    {
-      id: 13,
-      title: "Microservices with Kubernetes",
-      author: "Jennifer Wu",
-      readTime: "17 min",
-      difficulty: "Advanced",
-      excerpt: "Building and deploying scalable microservices using Kubernetes",
-      image: "https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=800&auto=format&fit=crop&q=60",
-      tags: ["Kubernetes", "DevOps", "Microservices"],
-      likes: 567,
-      saves: 189,
-      publishDate: "2023-12-05",
-      comments: 92,
-      link: "https://kubernetes.io/docs/tutorials/kubernetes-basics/"
-    },
-    {
-      id: 14,
-      title: "Web Assembly Deep Dive",
-      author: "Marcus Johnson",
-      readTime: "15 min",
-      difficulty: "Advanced",
-      excerpt: "Understanding WebAssembly and its applications in modern web development",
-      image: "https://images.unsplash.com/photo-1592609931095-54a2168ae893?w=800&auto=format&fit=crop&q=60",
-      tags: ["WebAssembly", "Performance", "Web Dev"],
-      likes: 432,
-      saves: 156,
-      publishDate: "2023-12-03",
-      comments: 67,
-      link: "https://webassembly.org/getting-started/developers-guide/"
-    },
-    {
-      id: 15,
-      title: "Svelte vs React in 2024",
-      author: "Laura Smith",
-      readTime: "12 min",
-      difficulty: "Intermediate",
-      excerpt: "Comparing Svelte and React frameworks for modern web applications",
-      image: "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&auto=format&fit=crop&q=60",
-      tags: ["Svelte", "React", "Frontend"],
-      likes: 678,
-      saves: 234,
-      publishDate: "2023-12-01",
-      comments: 98,
-      link: "https://svelte.dev/docs"
-    },
-    {
-      id: 16,
-      title: "Database Optimization Guide",
-      author: "Carlos Rodriguez",
-      readTime: "19 min",
-      difficulty: "Advanced",
-      excerpt: "Advanced techniques for optimizing database performance at scale",
-      image: "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=800&auto=format&fit=crop&q=60",
-      tags: ["Database", "Performance", "Backend"],
-      likes: 789,
-      saves: 267,
-      publishDate: "2023-11-28",
-      comments: 112,
-      link: "https://www.postgresql.org/docs/current/performance-tips.html"
-    },
-    {
-      id: 17,
-      title: "Mobile App Testing Strategies",
-      author: "Sophie Chen",
-      readTime: "11 min",
-      difficulty: "Intermediate",
-      excerpt: "Best practices for testing mobile applications effectively",
-      image: "https://images.unsplash.com/photo-1526498460520-4c246339dccb?w=800&auto=format&fit=crop&q=60",
-      tags: ["Testing", "Mobile", "QA"],
-      likes: 456,
-      saves: 145,
-      publishDate: "2023-11-25",
-      comments: 78,
-      link: "https://developer.android.com/training/testing"
-    },
-    {
-      id: 18,
-      title: "Blockchain Development 101",
-      author: "Ryan Kim",
-      readTime: "16 min",
-      difficulty: "Beginner",
-      excerpt: "Introduction to blockchain development and smart contracts",
-      image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=800&auto=format&fit=crop&q=60",
-      tags: ["Blockchain", "Web3", "Crypto"],
-      likes: 567,
-      saves: 198,
-      publishDate: "2023-11-22",
-      comments: 89,
-      link: "https://ethereum.org/en/developers/docs/"
-    },
-    {
-      id: 19,
-      title: "Writing Technical Blog Posts: A Developer's Guide",
-      author: "Rizèl Scarlett",
-      readTime: "15 min",
-      difficulty: "Beginner",
-      excerpt: "Learn how to create engaging technical content and share your knowledge effectively",
-      image: "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&auto=format&fit=crop&q=60",
-      tags: ["Writing", "Career", "Development"],
-      likes: 423,
-      saves: 189,
-      publishDate: "2023-11-20",
-      comments: 67,
-      link: "https://dev.to/blackgirlbytes/the-ultimate-guide-to-writing-technical-blog-posts-5464"
-    },
-    {
-      id: 20,
-      title: "The Evolution of Frontend Development in 2024",
-      author: "Dan Abramov",
-      readTime: "12 min",
-      difficulty: "Intermediate",
-      excerpt: "Exploring the latest trends and best practices in modern frontend development",
-      image: "https://images.unsplash.com/photo-1593720219276-0b1eacd0aef4?w=800&auto=format&fit=crop&q=60",
-      tags: ["Frontend", "JavaScript", "Web Dev"],
-      likes: 892,
-      saves: 345,
-      publishDate: "2023-11-18",
-      comments: 156,
-      link: "https://overreacted.io"
-    },
-    {
-      id: 21,
-      title: "Building Resilient Microservices",
-      author: "Martin Fowler",
-      readTime: "20 min",
-      difficulty: "Advanced",
-      excerpt: "Patterns and practices for designing robust microservice architectures",
-      image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&auto=format&fit=crop&q=60",
-      tags: ["Architecture", "Microservices", "Backend"],
-      likes: 678,
-      saves: 234,
-      publishDate: "2023-11-15",
-      comments: 89,
-      link: "https://martinfowler.com/articles/microservices.html"
-    },
-    {
-      id: 22,
-      title: "The Complete Guide to Web Performance",
-      author: "Addy Osmani",
-      readTime: "25 min",
-      difficulty: "Advanced",
-      excerpt: "Deep dive into web performance optimization techniques and metrics",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=60",
-      tags: ["Performance", "Web Dev", "Optimization"],
-      likes: 756,
-      saves: 289,
-      publishDate: "2023-11-12",
-      comments: 112,
-      link: "https://www.smashingmagazine.com/guides/performance/"
-    },
-    {
-      id: 23,
-      title: "Understanding Modern CSS",
-      author: "Josh Comeau",
-      readTime: "14 min",
-      difficulty: "Intermediate",
-      excerpt: "A deep dive into modern CSS features and techniques",
-      image: "https://images.unsplash.com/photo-1523437113738-bbd3cc89fb19?w=800&auto=format&fit=crop&q=60",
-      tags: ["CSS", "Frontend", "Design"],
-      likes: 567,
-      saves: 198,
-      publishDate: "2023-11-10",
-      comments: 78,
-      link: "https://www.joshwcomeau.com/css/understanding-layout-algorithms/"
-    },
-    {
-      id: 24,
-      title: "The State of JavaScript Testing in 2024",
-      author: "Kent C. Dodds",
-      readTime: "18 min",
-      difficulty: "Intermediate",
-      excerpt: "Modern testing practices and tools for JavaScript applications",
-      image: "https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&auto=format&fit=crop&q=60",
-      tags: ["Testing", "JavaScript", "Best Practices"],
-      likes: 645,
-      saves: 234,
-      publishDate: "2023-11-08",
-      comments: 92,
-      link: "https://kentcdodds.com/blog/common-testing-mistakes"
-    },
-    {
-      id: 25,
-      title: "Practical Guide to System Design",
-      author: "Alex Xu",
-      readTime: "22 min",
-      difficulty: "Advanced",
-      excerpt: "Real-world system design patterns and case studies",
-      image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&auto=format&fit=crop&q=60",
-      tags: ["System Design", "Architecture", "Backend"],
-      likes: 890,
-      saves: 456,
-      publishDate: "2023-11-05",
-      comments: 167,
-      link: "https://bytebytego.com"
-    },
-    {
-      id: 26,
-      title: "Advanced Git Workflows",
-      author: "Scott Chacon",
-      readTime: "16 min",
-      difficulty: "Advanced",
-      excerpt: "Master complex Git operations and team workflows",
-      image: "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=800&auto=format&fit=crop&q=60",
-      tags: ["Git", "DevOps", "Collaboration"],
-      likes: 567,
-      saves: 234,
-      publishDate: "2023-11-02",
-      comments: 88,
-      link: "https://git-scm.com/book/en/v2"
-    },
-    {
-      id: 27,
-      title: "Building AI-Powered Applications",
-      author: "François Chollet",
-      readTime: "25 min",
-      difficulty: "Advanced",
-      excerpt: "Implementing AI features in modern applications",
-      image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&auto=format&fit=crop&q=60",
-      tags: ["AI", "Machine Learning", "Programming"],
-      likes: 789,
-      saves: 345,
-      publishDate: "2023-10-30",
-      comments: 123,
-      link: "https://keras.io/examples/"
-    },
-    {
-      id: 28,
-      title: "Rust Web Development in 2024",
-      author: "Steve Klabnik",
-      readTime: "20 min",
-      difficulty: "Advanced",
-      excerpt: "Building web applications with Rust and modern frameworks",
-      image: "https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=800&auto=format&fit=crop&q=60",
-      tags: ["Rust", "Web Dev", "Backend"],
-      likes: 678,
-      saves: 234,
-      publishDate: "2023-10-28",
-      comments: 94,
-      link: "https://www.rust-lang.org/learn"
-    },
-    {
-      id: 29,
-      title: "Mastering TypeScript Generics",
-      author: "Matt Pocock",
-      readTime: "15 min",
-      difficulty: "Advanced",
-      excerpt: "Advanced TypeScript patterns and type-level programming",
-      image: "https://images.unsplash.com/photo-1580894894513-541e068a3e2b?w=800&auto=format&fit=crop&q=60",
-      tags: ["TypeScript", "JavaScript", "Programming"],
-      likes: 567,
-      saves: 198,
-      publishDate: "2023-10-25",
-      comments: 76,
-      link: "https://www.totaltypescript.com/tutorials"
-    },
-    {
-      id: 30,
-      title: "The Future of Web Components",
-      author: "Rich Harris",
-      readTime: "14 min",
-      difficulty: "Intermediate",
-      excerpt: "Modern approaches to building reusable web components",
-      image: "https://images.unsplash.com/photo-1618477247222-acbdb0e159b3?w=800&auto=format&fit=crop&q=60",
-      tags: ["Web Components", "Frontend", "JavaScript"],
-      likes: 456,
-      saves: 167,
-      publishDate: "2023-10-22",
-      comments: 58,
-      link: "https://svelte.dev/blog"
-    }
-  ];
-
-  // Mock boards data
   const boards = [
     {
       id: 1,
@@ -671,7 +295,7 @@ const Dashboard = () => {
           <a
             ref={ref}
             className={cn(
-              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
               className
             )}
             {...props}
@@ -760,6 +384,22 @@ const Dashboard = () => {
     ]
   };
 
+  const getDifficultyBadge = (difficulty: Article['difficulty']) => {
+    const badges = {
+      beginner: { text: 'Beginner', color: 'bg-green-100 text-green-800' },
+      intermediate: { text: 'Intermediate', color: 'bg-yellow-100 text-yellow-800' },
+      advanced: { text: 'Advanced', color: 'bg-red-100 text-red-800' }
+    };
+    return badges[difficulty];
+  };
+
+  // Update navigation links
+  const NavLink = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
+    <Link href={href} className={className}>
+      {children}
+    </Link>
+  );
+
   const UserNav = () => (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -794,7 +434,7 @@ const Dashboard = () => {
           </div>
         </div>
         <DropdownMenuSeparator />
-        <Link to="/profile" className="block">
+        <Link href="/profile" className="block">
           <DropdownMenuItem className="flex items-center gap-2 p-2 cursor-pointer hover:bg-primary/5 rounded-md transition-colors duration-200">
             <User className="h-4 w-4 opacity-70" />
             <div className="flex flex-col space-y-1 leading-none">
@@ -850,137 +490,7 @@ const Dashboard = () => {
         </div>
 
         <TabsContent value="feed" className="mt-6 focus-visible:outline-none">
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="overflow-hidden group hover:shadow-lg transition-all duration-300 animate-pulse">
-                  <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-700 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shimmer"></div>
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        {[1, 2].map((tag) => (
-                          <div key={tag} className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                        ))}
-                      </div>
-                      <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      <div className="flex items-center justify-between pt-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
-                          <div className="space-y-2">
-                            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                            <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recommendedArticles.map((article, index) => (
-                <motion.div
-                  key={article.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  whileHover={{ y: -5 }}
-                  className="h-full"
-                >
-                  <a
-                    href={article.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block h-full"
-                  >
-                    <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 
-                      bg-background/50 backdrop-blur-sm cursor-pointer transform hover:bg-background/80 
-                      border-muted/50 hover:border-primary/20 dark:hover:border-primary/30 hover:ring-2 hover:ring-primary/20 h-full">
-                      <div className="relative h-48 overflow-hidden">
-                        <img
-                          src={article.image}
-                          alt={article.title}
-                          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="absolute top-2 right-2 flex gap-2">
-                          <motion.span 
-                            className="bg-black/50 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm font-medium flex items-center gap-1"
-                            whileHover={{ scale: 1.05 }}
-                          >
-                            <Clock className="h-3 w-3" />
-                            {article.readTime}
-                          </motion.span>
-                          <motion.span 
-                            className={`px-3 py-1 rounded-full text-xs backdrop-blur-sm font-medium transition-all duration-300
-                              ${article.difficulty === 'Beginner' ? 'bg-green-500/80 text-white hover:bg-green-600/80' :
-                                article.difficulty === 'Intermediate' ? 'bg-yellow-500/80 text-white hover:bg-yellow-600/80' :
-                                'bg-red-500/80 text-white hover:bg-red-600/80'}`}
-                            whileHover={{ scale: 1.05 }}
-                          >
-                            {article.difficulty}
-                          </motion.span>
-                        </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {article.tags.map((tag) => (
-                            <motion.span
-                              key={tag}
-                              className={`px-2.5 py-1 rounded-full text-xs font-medium ${getTagColor(tag)} cursor-pointer`}
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {tag}
-                            </motion.span>
-                          ))}
-                        </div>
-                        <h3 className={`font-semibold text-lg mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                          {article.title}
-                        </h3>
-                        <p className={`text-sm mb-4 line-clamp-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                          {article.excerpt}
-                        </p>
-                        <div className="flex items-center justify-between mt-auto">
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8 ring-2 ring-offset-2 ring-offset-background ring-primary/20 transition-all duration-300 group-hover:ring-primary/40">
-                              <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${article.author}`} />
-                              <AvatarFallback>{article.author.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                {article.author}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {new Date(article.publishDate).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-1 rounded-full group/btn"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <BookMarked className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
-                              <span className="font-medium group-hover/btn:text-primary">{article.saves}</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </a>
-                </motion.div>
-              ))}
-            </div>
-          )}
+          {renderFeedContent()}
         </TabsContent>
 
         <TabsContent value="trending" className="mt-6 focus-visible:outline-none">
@@ -1185,6 +695,153 @@ const Dashboard = () => {
       </Tabs>
     </div>
   );
+
+  const renderFeedContent = () => {
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <div className="text-destructive mb-2">Error loading articles</div>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+      );
+    }
+
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="overflow-hidden group hover:shadow-lg transition-all duration-300 animate-pulse">
+              <div className="h-48 bg-gradient-to-r from-gray-200 to-gray-300 dark:from-gray-800 dark:to-gray-700 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent shimmer"></div>
+              </div>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    {[1, 2].map((tag) => (
+                      <div key={tag} className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    ))}
+                  </div>
+                  <div className="h-6 w-3/4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-4 w-2/3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="flex items-center justify-between pt-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {recommendedArticles.map((article, index) => (
+          <motion.div
+            key={article._id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: index * 0.1 }}
+            whileHover={{ y: -5 }}
+            className="h-full"
+          >
+            <a
+              href={article.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block h-full"
+            >
+              <Card className="overflow-hidden group hover:shadow-xl transition-all duration-300 
+                bg-background/50 backdrop-blur-sm cursor-pointer transform hover:bg-background/80 
+                border-muted/50 hover:border-primary/20 dark:hover:border-primary/30 hover:ring-2 hover:ring-primary/20 h-full">
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={article.image}
+                    alt={article.title}
+                    className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute top-2 right-2 flex gap-2">
+                    <motion.span 
+                      className="bg-black/50 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm font-medium flex items-center gap-1"
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      <Clock className="h-3 w-3" />
+                      {article.readTime}
+                    </motion.span>
+                    <motion.span 
+                      className={`px-3 py-1 rounded-full text-xs backdrop-blur-sm font-medium transition-all duration-300
+                        ${article.difficulty === 'beginner' ? 'bg-green-500/80 text-white hover:bg-green-600/80' :
+                          article.difficulty === 'intermediate' ? 'bg-yellow-500/80 text-white hover:bg-yellow-600/80' :
+                          'bg-red-500/80 text-white hover:bg-red-600/80'}`}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      {article.difficulty.charAt(0).toUpperCase() + article.difficulty.slice(1)}
+                    </motion.span>
+                  </div>
+                </div>
+                <CardContent className="p-4">
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {article.tags.map((tag) => (
+                      <motion.span
+                        key={tag}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${getTagColor(tag)} cursor-pointer`}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {tag}
+                      </motion.span>
+                    ))}
+                  </div>
+                  <h3 className={`font-semibold text-lg mb-2 group-hover:text-primary transition-colors duration-300 line-clamp-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {article.title}
+                  </h3>
+                  <p className={`text-sm mb-4 line-clamp-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {article.excerpt}
+                  </p>
+                  <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8 ring-2 ring-offset-2 ring-offset-background ring-primary/20 transition-all duration-300 group-hover:ring-primary/40">
+                        <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${article.author.name}`} />
+                        <AvatarFallback>{article.author.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                          {article.author.name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(article.publishDate).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-1 rounded-full group/btn"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <BookMarked className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
+                        <span className="font-medium group-hover/btn:text-primary">{article.saves}</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </a>
+          </motion.div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background">
