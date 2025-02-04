@@ -19,51 +19,66 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
   onRefresh,
   isLoading = false 
 }) => {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Latest Articles</h2>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full hover:bg-primary/10 transition-colors"
-          onClick={onRefresh}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, ease: "linear" }}
-              className="p-2"
-            >
-              <ArrowRight className="h-4 w-4 transform rotate-45" />
-            </motion.div>
-          )}
-        </Button>
-      </div>
+  // Group articles into three columns
+  const groupedArticles = React.useMemo(() => {
+    const columns: Article[][] = [[], [], []];
+    let columnIndex = 0;
+    
+    // Create a copy of articles array to avoid mutating the original
+    const shuffledArticles = [...articles].sort(() => Math.random() - 0.5);
+    
+    shuffledArticles.forEach((article) => {
+      // Add article to current column and move to next
+      columns[columnIndex].push(article);
+      // If article has image, skip next two columns
+      columnIndex = article.image ? 
+        (columnIndex + 3) % 3 : // Move to same column for next article
+        (columnIndex + 1) % 3;  // Move to next column
+    });
+    
+    return columns;
+  }, [articles]);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          // Show loading skeletons
-          Array.from({ length: 6 }).map((_, index) => (
+  return (
+    <div className="space-y-8">
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, index) => (
             <motion.div
               key={`loading-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: index * 0.05 }}
+              className={index % 3 === 0 ? "col-span-3" : "col-span-1"}
             >
               <LoadingArticleCard />
             </motion.div>
-          ))
-        ) : (
-          // Show actual articles
-          articles.map((article, index) => (
-            <ArticleCard key={article._id} article={article} index={index} />
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {groupedArticles.map((column, columnIndex) => (
+            <div key={columnIndex} className="space-y-4">
+              {column.map((article, index) => (
+                <motion.div
+                  key={`${article._id}-${columnIndex}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  className={article.image ? "col-span-3" : ""}
+                >
+                  <ArticleCard 
+                    article={article} 
+                    index={index} 
+                    variant={article.image ? 'full' : 'compact'}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }; 

@@ -1,11 +1,11 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTheme } from "next-themes";
 import { articleApi } from '@/services/api';
 import { getRandomItem, getRandomItems, getRandomInt, shuffleArray } from '@/utils/random';
 import { NavBar } from './dashboard/NavBar';
+import { Sidebar } from './dashboard/Sidebar';
 import { ArticleFeed } from './dashboard/ArticleFeed';
 import { Article } from './dashboard/types';
 
@@ -13,6 +13,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [currentTab, setCurrentTab] = useState("feed");
   const { theme } = useTheme();
 
   const isDarkMode = theme === "dark";
@@ -44,7 +45,7 @@ const Dashboard = () => {
         _id: article._id.toString(),
         title: title,
         link: article.blog_url || '#',
-        image: article.image_url || getRandomFallbackImage(),
+        image: article.image_url || null,
         readTime: getRandomInt(5, 25, seed),
         difficulty: getRandomItem(difficulties, seed),
         tags: getRandomItems(sampleTags, getRandomInt(1, 4, seed), seed),
@@ -94,78 +95,57 @@ const Dashboard = () => {
     setIsLoading(true);
     const randomizedArticles = shuffleArray([...recommendedArticles], Date.now());
     setRecommendedArticles(randomizedArticles);
-    // Simulate loading time for smooth transition
     setTimeout(() => {
       setIsLoading(false);
     }, 500);
   };
 
+  const renderContent = () => {
+    switch (currentTab) {
+      case "feed":
+        return (
+          <ArticleFeed 
+            articles={recommendedArticles} 
+            onRefresh={handleRefresh} 
+            isLoading={isLoading}
+          />
+        );
+      case "trending":
+        return (
+          <div className="flex items-center justify-center h-[50vh]">
+            <p className="text-muted-foreground">Trending content coming soon...</p>
+          </div>
+        );
+      case "following":
+        return (
+          <div className="flex items-center justify-center h-[50vh]">
+            <p className="text-muted-foreground">Following feed coming soon...</p>
+          </div>
+        );
+      case "history":
+        return (
+          <div className="flex items-center justify-center h-[50vh]">
+            <p className="text-muted-foreground">Reading history coming soon...</p>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background">
-      <NavBar />
-      <main className="flex-1 overflow-auto">
-        <div className="container mx-auto py-6 px-4 md:px-6 space-y-8">
-          <Tabs defaultValue="feed" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <TabsList className="p-1 bg-muted/50 backdrop-blur-sm rounded-full border border-muted/20">
-                <TabsTrigger 
-                  value="feed" 
-                  className="relative data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-300 rounded-full"
-                >
-                  <span>Feed</span>
-                  <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary animate-pulse">
-                    New
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="trending" 
-                  className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-300 rounded-full"
-                >
-                  Trending
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="following" 
-                  className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-300 rounded-full"
-                >
-                  Following
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="history" 
-                  className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all duration-300 rounded-full"
-                >
-                  History
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            <TabsContent value="feed" className="mt-6 focus-visible:outline-none">
-              <ArticleFeed 
-                articles={recommendedArticles} 
-                onRefresh={handleRefresh} 
-                isLoading={isLoading}
-              />
-            </TabsContent>
-
-            <TabsContent value="trending" className="mt-6 focus-visible:outline-none">
-              <div className="text-center text-muted-foreground">
-                Trending content coming soon...
-              </div>
-            </TabsContent>
-
-            <TabsContent value="following" className="mt-6 focus-visible:outline-none">
-              <div className="text-center text-muted-foreground">
-                Following feed coming soon...
-              </div>
-            </TabsContent>
-
-            <TabsContent value="history" className="mt-6 focus-visible:outline-none">
-              <div className="text-center text-muted-foreground">
-                Reading history coming soon...
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+    <div className="min-h-screen bg-background">
+      <div className="fixed top-0 left-0 right-0 z-50">
+        <NavBar />
+      </div>
+      <div className="pt-16 flex">
+        <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
+        <main className="flex-1 overflow-auto min-h-[calc(100vh-4rem)]">
+          <div className="container mx-auto py-6 px-4 md:px-6">
+            {renderContent()}
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
