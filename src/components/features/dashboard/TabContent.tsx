@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ArticleFeed } from './ArticleFeed';
-import { Article } from '@/components/dashboard/types';
+import { Article } from '@/types/article';
 import { SelectedFilters } from './SelectedFilters';
 
 interface TabContentProps {

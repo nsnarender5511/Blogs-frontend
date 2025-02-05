@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { ArticleCard } from './ArticleCard';
-import { Article } from './types';
+import { Article } from '@/types/article';
 
 interface ArticleFeedProps {
   articles: Article[];

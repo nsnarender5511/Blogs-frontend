@@ -1,2 +1,2 @@
-export { default as ReadingHistory } from './ReadingHistory';
-export { default as ReadingProgress } from './ReadingProgress'; 
+export { ReadingHistory } from './ReadingHistory';
+export { ReadingProgress } from './ReadingProgress'; 
