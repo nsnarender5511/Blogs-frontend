@@ -22,13 +22,9 @@ const checkImageDimensions = (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      console.log('Image loaded:', url);
-      console.log('Image dimensions:', { width: img.width, height: img.height });
-      console.log('Meets requirements:', img.width >= MIN_IMAGE_WIDTH && img.height >= MIN_IMAGE_HEIGHT);
       resolve(img.width >= MIN_IMAGE_WIDTH && img.height >= MIN_IMAGE_HEIGHT);
     };
     img.onerror = () => {
-      console.error('Error loading image:', url);
       resolve(false);
     };
     img.src = url;
@@ -80,19 +76,16 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   useEffect(() => {
     if (article.image) {
-      console.log('Checking image:', article.image);
       checkImageDimensions(article.image).then(meetsRequirements => {
-        console.log('Setting showImage to:', meetsRequirements);
         setShowImage(meetsRequirements);
       });
     } else {
-      console.log('No image provided for article:', article.title);
+      setShowImage(false);
     }
   }, [article.image]);
 
   // Determine which variant to use based on image quality
   const effectiveVariant = article.image && !showImage ? 'compact' : variant;
-  console.log('Effective variant:', effectiveVariant, { hasImage: !!article.image, showImage });
 
   const CompactCard = () => (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group bg-muted/50">
@@ -147,12 +140,6 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   );
 
   const FullCard = () => {
-    console.log('FullCard render:', {
-      hasImage: !!article.image,
-      showImage,
-      imageUrl: article.image
-    });
-
     return (
       <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
         <CardContent className="p-0">
@@ -165,15 +152,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                   onError={(e) => {
-                    console.error('Error loading image in FullCard:', article.image);
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
-                  }}
-                  onLoad={(e) => {
-                    console.log('Image loaded successfully in FullCard:', {
-                      width: (e.target as HTMLImageElement).naturalWidth,
-                      height: (e.target as HTMLImageElement).naturalHeight
-                    });
                   }}
                 />
               </div>

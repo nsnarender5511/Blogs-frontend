@@ -34,7 +34,7 @@ interface SidebarProps {
   selectedAuthors: string[];
   onAuthorToggle: (author: string) => void;
   articles: Article[];
-  tags: string[];
+  tags: readonly string[];
   userProfile?: {
     name: string;
     image?: string;

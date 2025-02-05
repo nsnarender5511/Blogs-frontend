@@ -5,12 +5,12 @@ export const articleApi = {
   async fetchArticles(): Promise<Article[]> {
     try {
       const response = await fetch('/api/articles');
+      const responseData = await response.json();
       if (!response.ok) {
         throw new Error('Failed to fetch articles');
       }
-      return response.json();
+      return responseData;
     } catch (error) {
-      console.error('Error fetching articles:', error);
       throw error;
     }
   },
@@ -31,7 +31,6 @@ export const articleApi = {
       
       return response.json();
     } catch (error) {
-      console.error('Error creating article:', error);
       throw error;
     }
   }

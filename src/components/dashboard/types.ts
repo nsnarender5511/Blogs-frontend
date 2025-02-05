@@ -1,17 +1,19 @@
+export interface Author {
+  name: string;
+  avatar: string;
+}
+
 export interface Article {
   _id: string;
   title: string;
   link: string;
-  image: string;
+  image: string | null;
   readTime: number;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   tags: string[];
   createdAt: string;
   excerpt: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
+  author: Author;
   publishDate: string;
   saves: number;
 }

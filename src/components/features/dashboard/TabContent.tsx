@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ArticleFeed } from './ArticleFeed';
-import { Article } from './types';
+import { Article } from '@/components/dashboard/types';
 import { SelectedFilters } from './SelectedFilters';
 
 interface TabContentProps {
@@ -28,6 +28,7 @@ export const TabContent: React.FC<TabContentProps> = ({
   onRefresh,
   isLoading
 }) => {
+  console.log("filteredArticles :: ", filteredArticles);
   switch (currentTab) {
     case "feed":
       return (

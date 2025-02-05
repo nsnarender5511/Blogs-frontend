@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Layout, Search, Bell } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/ModeToggle";
-import { UserNav } from "@/components/UserNav";
+import { ModeToggle } from "@/components/common/ModeToggle";
+import { UserNav } from "@/components/common/UserNav";
 import { cn } from "@/lib/utils";
 
 export const NavBar = () => {

@@ -1,7 +1,6 @@
 import dotenv from 'dotenv';
 import { connectToDatabase } from './db';
-import Article from '../models/Article';
-import { recommendedArticles } from '../data/mockData'; // Move your existing mock data to a separate file
+import { recommendedArticles } from '../data/mockData';
 import config from '../config';
 
 // Ensure environment variables are loaded
