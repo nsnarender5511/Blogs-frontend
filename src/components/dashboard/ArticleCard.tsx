@@ -22,9 +22,15 @@ const checkImageDimensions = (url: string): Promise<boolean> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
+      console.log('Image loaded:', url);
+      console.log('Image dimensions:', { width: img.width, height: img.height });
+      console.log('Meets requirements:', img.width >= MIN_IMAGE_WIDTH && img.height >= MIN_IMAGE_HEIGHT);
       resolve(img.width >= MIN_IMAGE_WIDTH && img.height >= MIN_IMAGE_HEIGHT);
     };
-    img.onerror = () => resolve(false);
+    img.onerror = () => {
+      console.error('Error loading image:', url);
+      resolve(false);
+    };
     img.src = url;
   });
 };
@@ -74,14 +80,19 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   useEffect(() => {
     if (article.image) {
+      console.log('Checking image:', article.image);
       checkImageDimensions(article.image).then(meetsRequirements => {
+        console.log('Setting showImage to:', meetsRequirements);
         setShowImage(meetsRequirements);
       });
+    } else {
+      console.log('No image provided for article:', article.title);
     }
   }, [article.image]);
 
   // Determine which variant to use based on image quality
   const effectiveVariant = article.image && !showImage ? 'compact' : variant;
+  console.log('Effective variant:', effectiveVariant, { hasImage: !!article.image, showImage });
 
   const CompactCard = () => (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group bg-muted/50">
@@ -111,7 +122,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           <h3 className="text-base font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
             {article.title}
           </h3>
-          <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
+          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
             {article.excerpt}
           </p>
         </div>
@@ -135,89 +146,109 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     </Card>
   );
 
-  const FullCard = () => (
-    <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
-      <CardContent className="p-0">
-        {article.image && showImage ? (
-          <div className="relative">
-            <div className="aspect-video overflow-hidden">
-              <img
-                src={article.image}
-                alt={article.title}
-                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
+  const FullCard = () => {
+    console.log('FullCard render:', {
+      hasImage: !!article.image,
+      showImage,
+      imageUrl: article.image
+    });
+
+    return (
+      <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
+        <CardContent className="p-0">
+          {article.image && showImage && (
+            <div className="relative w-full">
+              <div className="aspect-video w-full overflow-hidden">
+                <img
+                  src={article.image}
+                  alt={article.title}
+                  className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                  onError={(e) => {
+                    console.error('Error loading image in FullCard:', article.image);
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                  }}
+                  onLoad={(e) => {
+                    console.log('Image loaded successfully in FullCard:', {
+                      width: (e.target as HTMLImageElement).naturalWidth,
+                      height: (e.target as HTMLImageElement).naturalHeight
+                    });
+                  }}
+                />
+              </div>
+              <div className="absolute top-2 right-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+                  {badge.text}
+                </span>
+              </div>
             </div>
-            <div className="absolute top-2 right-2">
+          )}
+          {(!article.image || !showImage) && (
+            <div className="p-4 pb-0">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
                 {badge.text}
               </span>
             </div>
-          </div>
-        ) : (
-          <div className="p-4 pb-0">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
-              {badge.text}
-            </span>
-          </div>
-        )}
-        <div className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 flex-1">
-              <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                <img
-                  src={article.author.avatar}
-                  alt={article.author.name}
-                  className="object-cover"
-                  loading="lazy"
-                />
+          )}
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <div className="relative h-8 w-8 rounded-full overflow-hidden">
+                  <img
+                    src={article.author.avatar}
+                    alt={article.author.name}
+                    className="object-cover"
+                    loading="lazy"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{article.author.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(article.publishDate), { addSuffix: true })}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium">{article.author.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(article.publishDate), { addSuffix: true })}
-                </p>
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {article.readTime} min read
               </div>
             </div>
-            <div className="text-sm text-muted-foreground flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {article.readTime} min read
+            <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
+              {article.title}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {article.excerpt}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {article.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${getTagColor(tag)}`}
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
-          </div>
-          <h3 className="text-lg font-semibold leading-tight group-hover:text-primary transition-colors duration-300">
-            {article.title}
-          </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {article.excerpt}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {article.tags.map((tag) => (
-              <span
-                key={tag}
-                className={`px-2 py-1 rounded-full text-xs font-medium ${getTagColor(tag)}`}
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-1 rounded-full group/btn"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
               >
-                {tag}
-              </span>
-            ))}
+                <BookMarked className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
+                <span className="font-medium group-hover/btn:text-primary">{article.saves}</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-1 rounded-full group/btn"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              <BookMarked className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
-              <span className="font-medium group-hover/btn:text-primary">{article.saves}</span>
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <motion.div

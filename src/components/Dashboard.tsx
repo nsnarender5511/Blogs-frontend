@@ -19,7 +19,6 @@ const Dashboard = () => {
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("feed");
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const { theme } = useTheme();
 
   const sampleTags = ['Web Dev', 'Architecture', 'Backend', 'Frontend', 'AI', 'ML', 'DevOps', 'Cloud'];
@@ -132,10 +131,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NavBar 
-        isSidebarCollapsed={isSidebarCollapsed}
-        onSidebarToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
+      <NavBar />
       <Sidebar 
         currentTab={currentTab} 
         onTabChange={setCurrentTab}
@@ -145,11 +141,9 @@ const Dashboard = () => {
         onAuthorToggle={handleAuthorToggle}
         articles={recommendedArticles}
         tags={sampleTags}
-        isCollapsed={isSidebarCollapsed}
       />
       <main className={cn(
-        "min-h-screen transition-all duration-200 flex flex-col pt-16",
-        isSidebarCollapsed ? "pl-[60px]" : "pl-[240px]"
+        "min-h-screen transition-all duration-200 flex flex-col pt-16 pl-[240px]"
       )}>
         <div className="container mx-auto px-4 flex-1">
           <TabContent

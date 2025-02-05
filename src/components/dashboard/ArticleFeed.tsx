@@ -43,37 +43,35 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
   }, [articles]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, index) => (
             <motion.div
               key={`loading-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: index * 0.05 }}
-              className={index % 3 === 0 ? "col-span-3" : "col-span-1"}
             >
               <LoadingArticleCard />
             </motion.div>
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {groupedArticles.map((column, columnIndex) => (
-            <div key={columnIndex} className="flex flex-col gap-6">
+            <div key={columnIndex} className="flex flex-col gap-4">
               {column.map((article, index) => (
                 <motion.div
                   key={`${article._id}-${columnIndex}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className={article.image ? "md:col-span-3" : ""}
                 >
                   <ArticleCard 
                     article={article} 
                     index={index} 
-                    variant={article.image ? 'full' : 'compact'}
+                    variant="full"
                   />
                 </motion.div>
               ))}

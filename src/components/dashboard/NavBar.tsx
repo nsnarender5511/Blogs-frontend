@@ -2,38 +2,22 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
-import { Layout, Search, Bell, MenuIcon } from 'lucide-react';
+import { Layout, Search, Bell } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ModeToggle";
 import { UserNav } from "@/components/UserNav";
 import { cn } from "@/lib/utils";
 
-interface NavBarProps {
-  isSidebarCollapsed: boolean;
-  onSidebarToggle: () => void;
-}
-
-export const NavBar: React.FC<NavBarProps> = ({
-  isSidebarCollapsed,
-  onSidebarToggle
-}) => {
+export const NavBar = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b glass-effect backdrop-blur-lg bg-background/80">
       <div className="container mx-auto h-16">
         <div className="flex h-full items-center justify-between gap-4">
-          {/* Left section - Logo and Menu */}
+          {/* Left section - Logo */}
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-9 h-9 p-0"
-              onClick={onSidebarToggle}
-            >
-              <MenuIcon className="h-4 w-4" />
-            </Button>
             <div className="flex items-center gap-2">
               <motion.div
                 whileHover={{ rotate: 5, scale: 1.1 }}
