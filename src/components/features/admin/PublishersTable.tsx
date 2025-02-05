@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from 'next/navigation';
+import { AgGridReact } from 'ag-grid-react';
+import { ColDef, RowClickedEvent, ClientSideRowModelModule } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 interface PublisherStat {
   name: string;
@@ -17,10 +21,69 @@ interface PublishersTableProps {
 export function PublishersTable({ publishers }: PublishersTableProps) {
   const router = useRouter();
 
-  const handlePublisherClick = (publisherName: string) => {
-    router.push(`/admin/publisher/${encodeURIComponent(publisherName)}`);
+  const handlePublisherClick = (event: RowClickedEvent<PublisherStat>) => {
+    if (event.data) {
+      router.push(`/admin/publisher/${encodeURIComponent(event.data.name)}`);
+    }
   };
 
+  const columnDefs = useMemo<ColDef<PublisherStat>[]>(() => [
+    { 
+      field: 'rank', 
+      headerName: 'Rank',
+      sortable: true,
+      width: 100 
+    },
+    {
+      field: 'name',
+      headerName: 'Publisher',
+      sortable: true,
+      flex: 1,
+      cellRenderer: (params: { data: PublisherStat; value: string }) => {
+        return (
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full overflow-hidden bg-background border">
+              <img
+                src={`https://icon.horse/icon/${params.data.domain}`}
+                alt={params.data.name}
+                className="w-full h-full object-cover"
+                onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                  e.currentTarget.src = 'https://www.google.com/s2/favicons?domain=' + params.data.domain;
+                }}
+              />
+            </div>
+            <span>{params.value}</span>
+          </div>
+        );
+      }
+    },
+    { 
+      field: 'domain', 
+      headerName: 'Domain',
+      sortable: true,
+      flex: 1 
+    },
+    { 
+      field: 'count', 
+      headerName: 'Articles',
+      sortable: true,
+      width: 120 
+    },
+    { 
+      field: 'percentage', 
+      headerName: 'Share',
+      sortable: true,
+      width: 120,
+      valueFormatter: (params: { value: number }) => `${params.value}%`
+    }
+  ], []);
+
+  const defaultColDef = useMemo<ColDef<PublisherStat>>(() => ({
+    resizable: true,
+  }), []);
+
+  console.log("publishers :: ", publishers);  
+  console.log("columnDefs :: ", columnDefs);
   return (
     <Card>
       <CardHeader>
@@ -30,55 +93,18 @@ export function PublishersTable({ publishers }: PublishersTableProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="relative w-full overflow-auto">
-          <table className="w-full caption-bottom text-sm">
-            <thead className="[&_tr]:border-b">
-              <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Rank</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Publisher</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Domain</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Articles</th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Share</th>
-              </tr>
-            </thead>
-            <tbody className="[&_tr:last-child]:border-0">
-              {publishers.length > 0 ? (
-                publishers.map((publisher) => (
-                  <tr
-                    key={publisher.name}
-                    className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted cursor-pointer"
-                    onClick={() => handlePublisherClick(publisher.name)}
-                  >
-                    <td className="p-4 align-middle">{publisher.rank}</td>
-                    <td className="p-4 align-middle">
-                      <div className="flex items-center gap-2">
-                        <div className="h-6 w-6 rounded-full overflow-hidden bg-background border">
-                          <img
-                            src={`https://icon.horse/icon/${publisher.domain}`}
-                            alt={publisher.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://www.google.com/s2/favicons?domain=' + publisher.domain;
-                            }}
-                          />
-                        </div>
-                        <span>{publisher.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 align-middle">{publisher.domain}</td>
-                    <td className="p-4 align-middle">{publisher.count}</td>
-                    <td className="p-4 align-middle">{publisher.percentage}%</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground">
-                    No publisher data available
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+        <div className="ag-theme-alpine dark:ag-theme-alpine-dark w-full h-[500px]">
+          <AgGridReact<PublisherStat>
+            rowData={publishers}
+            columnDefs={columnDefs}
+            defaultColDef={defaultColDef}
+            onRowClicked={handlePublisherClick}
+            animateRows={true}
+            rowSelection="single"
+            suppressCellFocus={true}
+            domLayout="autoHeight"
+            modules={[ClientSideRowModelModule]}
+          />
         </div>
       </CardContent>
     </Card>
