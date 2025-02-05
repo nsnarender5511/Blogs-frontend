@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, LogOut, Settings, HelpCircle, Bell } from "lucide-react";
+import { User, LogOut, Settings, HelpCircle, Bell, Layout } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function UserNav() {
@@ -50,6 +50,12 @@ export function UserNav() {
         <DropdownMenuItem className="p-2 focus:bg-primary/5 cursor-pointer transition-colors duration-150 rounded-md">
           <User className="mr-2 h-4 w-4 text-primary" />
           <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild className="p-2 focus:bg-primary/5 cursor-pointer transition-colors duration-150 rounded-md">
+          <a href="/admin">
+            <Layout className="mr-2 h-4 w-4 text-primary" />
+            <span>Admin Dashboard</span>
+          </a>
         </DropdownMenuItem>
         <DropdownMenuItem className="p-2 focus:bg-primary/5 cursor-pointer transition-colors duration-150 rounded-md">
           <Settings className="mr-2 h-4 w-4 text-primary" />
