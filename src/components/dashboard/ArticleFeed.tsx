@@ -19,29 +19,31 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
   onRefresh,
   isLoading = false 
 }) => {
-  // Group articles into three columns
+  // Group articles into three columns with balanced heights
   const groupedArticles = React.useMemo(() => {
     const columns: Article[][] = [[], [], []];
-    let columnIndex = 0;
+    let columnHeights = [0, 0, 0];
     
     // Create a copy of articles array to avoid mutating the original
     const shuffledArticles = [...articles].sort(() => Math.random() - 0.5);
     
     shuffledArticles.forEach((article) => {
-      // Add article to current column and move to next
-      columns[columnIndex].push(article);
-      // If article has image, skip next two columns
-      columnIndex = article.image ? 
-        (columnIndex + 3) % 3 : // Move to same column for next article
-        (columnIndex + 1) % 3;  // Move to next column
+      // Calculate estimated height (can be adjusted based on content)
+      const estimatedHeight = article.image ? 3 : 1;
+      
+      // Find the column with minimum height
+      const minHeightIndex = columnHeights.indexOf(Math.min(...columnHeights));
+      
+      // Add article to the shortest column
+      columns[minHeightIndex].push(article);
+      columnHeights[minHeightIndex] += estimatedHeight;
     });
     
     return columns;
   }, [articles]);
 
   return (
-    <div className="space-y-8">
-
+    <div className="space-y-2">
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -57,16 +59,16 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {groupedArticles.map((column, columnIndex) => (
-            <div key={columnIndex} className="space-y-4">
+            <div key={columnIndex} className="flex flex-col gap-6">
               {column.map((article, index) => (
                 <motion.div
                   key={`${article._id}-${columnIndex}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className={article.image ? "col-span-3" : ""}
+                  className={article.image ? "md:col-span-3" : ""}
                 >
                   <ArticleCard 
                     article={article} 
@@ -77,6 +79,19 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
               ))}
             </div>
           ))}
+          {/* {articles.length === 0 && (
+            <div className="col-span-3 flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-muted-foreground mb-4">No articles found with the selected tags.</p>
+              <Button 
+                variant="outline" 
+                onClick={onRefresh}
+                className="gap-2"
+              >
+                Try refreshing
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )} */}
         </div>
       )}
     </div>

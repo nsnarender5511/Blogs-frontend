@@ -3,25 +3,89 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { 
-  ChevronLeft, 
   LayoutDashboard, 
   TrendingUp, 
   Users, 
   History,
-  MenuIcon
+  Tags,
+  ChevronLeft,
+  Check,
+  User,
+  Code2,
+  Blocks,
+  Database,
+  Layout,
+  Brain,
+  FlaskConical,
+  Cloud,
+  Cog,
+  LucideProps
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import { Article } from './types';
+import { motion } from "framer-motion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface SidebarProps {
   currentTab: string;
   onTabChange: (tab: string) => void;
+  selectedTags: string[];
+  onTagToggle: (tag: string) => void;
+  selectedAuthors: string[];
+  onAuthorToggle: (author: string) => void;
+  articles: Article[];
+  tags: string[];
+  isCollapsed: boolean;
+  userProfile?: {
+    name: string;
+    image?: string;
+  };
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
   currentTab,
-  onTabChange
+  onTabChange,
+  selectedTags,
+  onTagToggle,
+  selectedAuthors = [],
+  onAuthorToggle = () => {},
+  articles,
+  tags,
+  isCollapsed,
+  userProfile = { name: "User" }
 }) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [isTagsExpanded, setIsTagsExpanded] = React.useState(true);
+  const [isAuthorsExpanded, setIsAuthorsExpanded] = React.useState(false);
+  const [showAllTags, setShowAllTags] = React.useState(false);
+  const [showAllAuthors, setShowAllAuthors] = React.useState(false);
+
+  const getTagCount = (tag: string) => {
+    return articles.filter(article => article.tags.includes(tag)).length;
+  };
+
+  const getAuthorCount = (authorName: string) => {
+    return articles.filter(article => article.author.name === authorName).length;
+  };
+
+  const uniqueAuthors = React.useMemo(() => {
+    const authors = articles.map(article => article.author.name);
+    return [...new Set(authors)].sort();
+  }, [articles]);
+
+  const getTagIcon = (tag: string) => {
+    const icons: { [key: string]: React.ComponentType<LucideProps> } = {
+      'Web Dev': Code2,
+      'Architecture': Blocks,
+      'Backend': Database,
+      'Frontend': Layout,
+      'AI': Brain,
+      'ML': FlaskConical,
+      'DevOps': Cog,
+      'Cloud': Cloud
+    };
+    const Icon = icons[tag] || Tags;
+    return (props: LucideProps) => <Icon {...props} />;
+  };
 
   const tabs = [
     {
@@ -47,60 +111,234 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   ];
 
+  const INITIAL_ITEMS_TO_SHOW = 5;
+
+  const visibleTags = showAllTags ? tags : tags.slice(0, INITIAL_ITEMS_TO_SHOW);
+  const visibleAuthors = showAllAuthors ? uniqueAuthors : uniqueAuthors.slice(0, INITIAL_ITEMS_TO_SHOW);
+
+  const hasMoreTags = tags.length > INITIAL_ITEMS_TO_SHOW;
+  const hasMoreAuthors = uniqueAuthors.length > INITIAL_ITEMS_TO_SHOW;
+
   return (
-    <div
+    <aside
       className={cn(
-        "border-r bg-background/60 backdrop-blur-xl h-[calc(100vh-4rem)]",
-        "transition-all duration-200 ease-out",
+        "fixed left-0 top-16 bottom-0",
+        "bg-background/60 backdrop-blur-xl border-r",
+        "transition-all duration-200 ease-out flex flex-col",
         isCollapsed ? "w-[60px]" : "w-[240px]"
       )}
     >
-      <div className="flex items-center justify-between p-4 border-b">
-        {!isCollapsed && (
-          <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50 truncate">
-            RediGNN
-          </h2>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-full shrink-0"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? (
-            <MenuIcon className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
+      <ScrollArea className="flex-none py-2">
+        <nav className="flex flex-col gap-1 px-2">
+          {tabs.map((tab) => (
+            <Button
+              key={tab.value}
+              variant={currentTab === tab.value ? "secondary" : "ghost"}
+              className={cn(
+                "w-full transition-all duration-200",
+                isCollapsed ? "justify-center p-0 h-9" : "justify-start gap-2 px-4"
+              )}
+              onClick={() => onTabChange(tab.value)}
+            >
+              <tab.icon className="h-4 w-4 shrink-0" />
+              {!isCollapsed && (
+                <>
+                  <span>{tab.label}</span>
+                  {tab.isNew && (
+                    <span className="absolute right-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary animate-pulse">
+                      New
+                    </span>
+                  )}
+                </>
+              )}
+            </Button>
+          ))}
+        </nav>
+      </ScrollArea>
 
-      <nav className="flex flex-col gap-1 p-2">
-        {tabs.map((tab) => (
+      {isCollapsed ? (
+        <div className="flex flex-col gap-1 px-2 py-2 border-t">
           <Button
-            key={tab.value}
-            variant={currentTab === tab.value ? "secondary" : "ghost"}
-            className={cn(
-              "w-full justify-start gap-2 relative transition-all duration-200",
-              isCollapsed ? "px-2" : "px-4"
-            )}
-            onClick={() => onTabChange(tab.value)}
+            variant={selectedTags.length > 0 ? "secondary" : "ghost"}
+            size="sm"
+            className="w-full h-9 p-0 relative"
+            onClick={() => setIsTagsExpanded(!isTagsExpanded)}
           >
-            <tab.icon className="h-4 w-4 shrink-0" />
-            <span className={cn(
-              "transition-all duration-200",
-              isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-            )}>
-              {tab.label}
-            </span>
-            {!isCollapsed && tab.isNew && (
-              <span className="absolute right-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary animate-pulse">
-                New
+            <Tags className="h-4 w-4" />
+            {selectedTags.length > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium flex items-center justify-center text-primary-foreground">
+                {selectedTags.length}
               </span>
             )}
           </Button>
-        ))}
-      </nav>
-    </div>
+          <Button
+            variant={selectedAuthors.length > 0 ? "secondary" : "ghost"}
+            size="sm"
+            className="w-full h-9 p-0 relative"
+            onClick={() => setIsAuthorsExpanded(!isAuthorsExpanded)}
+          >
+            <User className="h-4 w-4" />
+            {selectedAuthors.length > 0 && (
+              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium flex items-center justify-center text-primary-foreground">
+                {selectedAuthors.length}
+              </span>
+            )}
+          </Button>
+        </div>
+      ) : (
+        <ScrollArea className="flex-1 px-2">
+          <div className="space-y-2 py-4">
+            {/* Tags Filter */}
+            <div>
+              <Button
+                variant="ghost"
+                className="w-full justify-between px-4 mb-2"
+                onClick={() => setIsTagsExpanded(!isTagsExpanded)}
+              >
+                <div className="flex items-center gap-2">
+                  <Tags className="h-4 w-4" />
+                  <span>Filter by Tags</span>
+                </div>
+                <ChevronLeft className={cn(
+                  "h-4 w-4 transition-transform",
+                  isTagsExpanded ? "rotate-90" : "-rotate-90"
+                )} />
+              </Button>
+
+              <motion.div
+                initial={false}
+                animate={{ height: isTagsExpanded ? "auto" : 0, opacity: isTagsExpanded ? 1 : 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-col gap-1 px-2">
+                  {visibleTags.map((tag) => {
+                    const count = getTagCount(tag);
+                    const isSelected = selectedTags.includes(tag);
+                    const TagIcon = getTagIcon(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => onTagToggle(tag)}
+                        disabled={count === 0}
+                        className={cn(
+                          "flex items-center justify-between py-1.5 px-2 rounded-md",
+                          "text-sm transition-colors duration-200",
+                          "hover:bg-muted/80",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          count === 0 && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-colors duration-200",
+                            isSelected 
+                              ? "bg-primary border-primary text-primary-foreground" 
+                              : "border-muted-foreground/30"
+                          )}>
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </div>
+                          <TagIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm">{tag}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground min-w-[1.5rem] text-center">
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {hasMoreTags && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-1 text-xs text-muted-foreground hover:text-primary"
+                      onClick={() => setShowAllTags(!showAllTags)}
+                    >
+                      {showAllTags ? 'Show Less' : `Show ${tags.length - INITIAL_ITEMS_TO_SHOW} More`}
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Authors Filter */}
+            <div>
+              <Button
+                variant="ghost"
+                className="w-full justify-between px-4 mb-2"
+                onClick={() => setIsAuthorsExpanded(!isAuthorsExpanded)}
+              >
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Filter by Authors</span>
+                </div>
+                <ChevronLeft className={cn(
+                  "h-4 w-4 transition-transform",
+                  isAuthorsExpanded ? "rotate-90" : "-rotate-90"
+                )} />
+              </Button>
+
+              <motion.div
+                initial={false}
+                animate={{ height: isAuthorsExpanded ? "auto" : 0, opacity: isAuthorsExpanded ? 1 : 0 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-col gap-1 px-2">
+                  {visibleAuthors.map((author) => {
+                    const count = getAuthorCount(author);
+                    const isSelected = selectedAuthors.includes(author);
+                    return (
+                      <button
+                        key={author}
+                        onClick={() => onAuthorToggle(author)}
+                        disabled={count === 0}
+                        className={cn(
+                          "flex items-center justify-between py-1.5 px-2 rounded-md",
+                          "text-sm transition-colors duration-200",
+                          "hover:bg-muted/80",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                          count === 0 && "opacity-50 cursor-not-allowed"
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center transition-colors duration-200",
+                            isSelected 
+                              ? "bg-primary border-primary text-primary-foreground" 
+                              : "border-muted-foreground/30"
+                          )}>
+                            {isSelected && <Check className="h-3 w-3" />}
+                          </div>
+                          <div className="h-4 w-4 rounded-full overflow-hidden bg-muted">
+                            <img
+                              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${author}`}
+                              alt={author}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <span className="text-sm">{author}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground min-w-[1.5rem] text-center">
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {hasMoreAuthors && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full mt-1 text-xs text-muted-foreground hover:text-primary"
+                      onClick={() => setShowAllAuthors(!showAllAuthors)}
+                    >
+                      {showAllAuthors ? 'Show Less' : `Show ${uniqueAuthors.length - INITIAL_ITEMS_TO_SHOW} More`}
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </ScrollArea>
+      )}
+    </aside>
   );
 }; 

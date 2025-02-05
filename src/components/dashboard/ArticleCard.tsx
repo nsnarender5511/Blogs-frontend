@@ -15,6 +15,20 @@ interface ArticleCardProps {
   variant?: 'compact' | 'full';
 }
 
+const MIN_IMAGE_WIDTH = 400;
+const MIN_IMAGE_HEIGHT = 225;
+
+const checkImageDimensions = (url: string): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      resolve(img.width >= MIN_IMAGE_WIDTH && img.height >= MIN_IMAGE_HEIGHT);
+    };
+    img.onerror = () => resolve(false);
+    img.src = url;
+  });
+};
+
 const getDifficultyBadge = (difficulty: Article['difficulty']) => {
   const badges = {
     beginner: { text: 'Beginner', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
@@ -47,6 +61,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   variant = 'full'
 }) => {
   const [isMounted, setIsMounted] = useState(false);
+  const [showImage, setShowImage] = useState(false);
   const badge = getDifficultyBadge(article.difficulty);
 
   useEffect(() => {
@@ -56,6 +71,17 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
     return () => clearTimeout(timer);
   }, [index]);
+
+  useEffect(() => {
+    if (article.image) {
+      checkImageDimensions(article.image).then(meetsRequirements => {
+        setShowImage(meetsRequirements);
+      });
+    }
+  }, [article.image]);
+
+  // Determine which variant to use based on image quality
+  const effectiveVariant = article.image && !showImage ? 'compact' : variant;
 
   const CompactCard = () => (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group bg-muted/50">
@@ -112,21 +138,29 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const FullCard = () => (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 group">
       <CardContent className="p-0">
-        <div className="relative">
-          <div className="aspect-video overflow-hidden">
-            <img
-              src={article.image}
-              alt={article.title}
-              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
-            />
+        {article.image && showImage ? (
+          <div className="relative">
+            <div className="aspect-video overflow-hidden">
+              <img
+                src={article.image}
+                alt={article.title}
+                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+            </div>
+            <div className="absolute top-2 right-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
+                {badge.text}
+              </span>
+            </div>
           </div>
-          <div className="absolute top-2 right-2">
+        ) : (
+          <div className="p-4 pb-0">
             <span className={`px-2 py-1 rounded-full text-xs font-medium ${badge.color}`}>
               {badge.text}
             </span>
           </div>
-        </div>
+        )}
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-2 flex-1">
@@ -192,7 +226,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
       transition={{ duration: 0.2 }}
     >
       <a href={article.link} target="_blank" rel="noopener noreferrer">
-        {variant === 'compact' ? <CompactCard /> : <FullCard />}
+        {effectiveVariant === 'compact' ? <CompactCard /> : <FullCard />}
       </a>
     </motion.div>
   );

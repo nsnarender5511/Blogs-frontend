@@ -6,33 +6,26 @@ import { articleApi } from '@/services/api';
 import { getRandomItem, getRandomItems, getRandomInt, shuffleArray } from '@/utils/random';
 import { NavBar } from './dashboard/NavBar';
 import { Sidebar } from './dashboard/Sidebar';
-import { ArticleFeed } from './dashboard/ArticleFeed';
+import { TabContent } from './dashboard/TabContent';
+import { Footer } from './dashboard/Footer';
 import { Article } from './dashboard/types';
+import { cn } from '@/lib/utils';
 
 const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [recommendedArticles, setRecommendedArticles] = useState<Article[]>([]);
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [currentTab, setCurrentTab] = useState("feed");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const { theme } = useTheme();
 
-  const isDarkMode = theme === "dark";
-
-  const fallbackImages = [
-    "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=1000",
-    "https://images.unsplash.com/photo-1605379399642-870262d3d051?q=80&w=1000",
-    "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=1000",
-    "https://images.unsplash.com/photo-1504639725590-34d0984388bd?q=80&w=1000",
-    "https://images.unsplash.com/photo-1555066931-4365d14bab8c?q=80&w=1000"
-  ];
-
-  const getRandomFallbackImage = () => {
-    return getRandomItem(fallbackImages);
-  };
+  const sampleTags = ['Web Dev', 'Architecture', 'Backend', 'Frontend', 'AI', 'ML', 'DevOps', 'Cloud'];
 
   const transform_article = (articles: any[]) => {
     const difficulties: Array<'beginner' | 'intermediate' | 'advanced'> = ['beginner', 'intermediate', 'advanced'];
-    const sampleTags = ['Web Dev', 'Architecture', 'Backend', 'Frontend', 'AI', 'ML', 'DevOps', 'Cloud'];
     
     return articles.map((article) => {
       const title = typeof article.title === 'object' ? 
@@ -79,6 +72,7 @@ const Dashboard = () => {
         const transformedArticles = transform_article(articles);
         const randomizedArticles = shuffleArray(transformedArticles, Date.now());
         setRecommendedArticles(randomizedArticles);
+        setFilteredArticles(randomizedArticles);
         setError(null);
       } catch (err) {
         console.error('Error fetching articles:', err);
@@ -91,6 +85,37 @@ const Dashboard = () => {
     fetchRecommendedArticles();
   }, []);
 
+  useEffect(() => {
+    if (selectedTags.length === 0 && selectedAuthors.length === 0) {
+      setFilteredArticles(recommendedArticles);
+    } else {
+      const filtered = recommendedArticles.filter(article => {
+        const matchesTags = selectedTags.length === 0 || 
+          article.tags.some(tag => selectedTags.includes(tag));
+        const matchesAuthors = selectedAuthors.length === 0 || 
+          selectedAuthors.includes(article.author.name);
+        return matchesTags && matchesAuthors;
+      });
+      setFilteredArticles(filtered);
+    }
+  }, [selectedTags, selectedAuthors, recommendedArticles]);
+
+  const handleTagToggle = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const handleAuthorToggle = (author: string) => {
+    setSelectedAuthors(prev => 
+      prev.includes(author)
+        ? prev.filter(a => a !== author)
+        : [...prev, author]
+    );
+  };
+
   const handleRefresh = () => {
     setIsLoading(true);
     const randomizedArticles = shuffleArray([...recommendedArticles], Date.now());
@@ -100,52 +125,47 @@ const Dashboard = () => {
     }, 500);
   };
 
-  const renderContent = () => {
-    switch (currentTab) {
-      case "feed":
-        return (
-          <ArticleFeed 
-            articles={recommendedArticles} 
-            onRefresh={handleRefresh} 
-            isLoading={isLoading}
-          />
-        );
-      case "trending":
-        return (
-          <div className="flex items-center justify-center h-[50vh]">
-            <p className="text-muted-foreground">Trending content coming soon...</p>
-          </div>
-        );
-      case "following":
-        return (
-          <div className="flex items-center justify-center h-[50vh]">
-            <p className="text-muted-foreground">Following feed coming soon...</p>
-          </div>
-        );
-      case "history":
-        return (
-          <div className="flex items-center justify-center h-[50vh]">
-            <p className="text-muted-foreground">Reading history coming soon...</p>
-          </div>
-        );
-      default:
-        return null;
-    }
+  const handleClearFilters = () => {
+    setSelectedTags([]);
+    setSelectedAuthors([]);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <NavBar />
-      </div>
-      <div className="pt-16 flex">
-        <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
-        <main className="flex-1 overflow-auto min-h-[calc(100vh-4rem)]">
-          <div className="container mx-auto py-6 px-4 md:px-6">
-            {renderContent()}
-          </div>
-        </main>
-      </div>
+      <NavBar 
+        isSidebarCollapsed={isSidebarCollapsed}
+        onSidebarToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
+      <Sidebar 
+        currentTab={currentTab} 
+        onTabChange={setCurrentTab}
+        selectedTags={selectedTags}
+        onTagToggle={handleTagToggle}
+        selectedAuthors={selectedAuthors}
+        onAuthorToggle={handleAuthorToggle}
+        articles={recommendedArticles}
+        tags={sampleTags}
+        isCollapsed={isSidebarCollapsed}
+      />
+      <main className={cn(
+        "min-h-screen transition-all duration-200 flex flex-col pt-16",
+        isSidebarCollapsed ? "pl-[60px]" : "pl-[240px]"
+      )}>
+        <div className="container mx-auto px-4 flex-1">
+          <TabContent
+            currentTab={currentTab}
+            filteredArticles={filteredArticles}
+            selectedTags={selectedTags}
+            selectedAuthors={selectedAuthors}
+            onTagToggle={handleTagToggle}
+            onAuthorToggle={handleAuthorToggle}
+            onClearFilters={handleClearFilters}
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
+          />
+        </div>
+        <Footer />
+      </main>
     </div>
   );
 };
