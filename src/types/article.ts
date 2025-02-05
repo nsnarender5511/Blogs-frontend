@@ -1,30 +1,39 @@
 export interface Author {
+  _id: string;
   name: string;
   avatar: string;
+  bio?: string;
 }
 
 export interface Article {
   _id: string;
   title: string;
-  link: string;
-  image: string | null;
-  readTime: number;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  tags: string[];
-  createdAt: string;
   excerpt: string;
+  content: string;
   author: Author;
   publishDate: string;
+  readTime: number;
+  image?: string;
+  link: string;
+  tags: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
   saves: number;
 }
 
 export interface RawArticle {
-  _id: any;
+  _id: string;
   title: string | { category: string };
+  excerpt: string;
+  content: string;
+  publisher?: string;
+  link: string;
   blog_url?: string;
   image_url?: string;
-  created_at: string | Date;
+  created_at?: string;
+  date?: string;
   additional_info?: string;
-  authors?: string[];
-  date?: string | Date;
+  readTime?: number;
+  tags?: string[];
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  saves?: number;
 } 

@@ -1,2 +1,2 @@
-export { default as ModeToggle } from './ModeToggle';
-export { default as UserNav } from './UserNav'; 
+export {ModeToggle } from './ModeToggle';
+export { UserNav } from './UserNav'; 

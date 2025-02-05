@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookMarked, Clock, BookOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Article } from './types';
+import { Article } from '@/types/article';
 import { cn } from "@/lib/utils";
 
 interface ArticleCardProps {
