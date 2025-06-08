@@ -1,4 +1,4 @@
-"use client"
+"use client"; // Ensure this is at the top
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,9 +8,12 @@ import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/common/ModeToggle";
 import { UserNav } from "@/components/common/UserNav";
 import { cn } from "@/lib/utils";
+import { useUser } from '@auth0/nextjs-auth0/client'; // Import useUser
+import Link from 'next/link'; // Import Link for login/signup
 
 export const NavBar = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const { user, isLoading } = useUser();
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b glass-effect backdrop-blur-lg bg-background/80">
@@ -18,22 +21,24 @@ export const NavBar = () => {
         <div className="flex h-full items-center justify-between gap-4">
           {/* Left section - Logo */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <motion.div
-                whileHover={{ rotate: 5, scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="p-2 rounded-xl bg-primary/10"
-              >
-                <Layout className="h-5 w-5 text-primary" />
-              </motion.div>
-              <motion.h2 
-                className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50 cursor-pointer relative group hidden sm:block"
-                whileHover={{ scale: 1.02 }}
-              >
-                RediGNN
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-primary/50 group-hover:w-full transition-all duration-300"></span>
-              </motion.h2>
-            </div>
+            <Link href="/" legacyBehavior passHref>
+              <a className="flex items-center gap-2">
+                <motion.div
+                  whileHover={{ rotate: 5, scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-2 rounded-xl bg-primary/10"
+                >
+                  <Layout className="h-5 w-5 text-primary" />
+                </motion.div>
+                <motion.h2
+                  className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/50 cursor-pointer relative group hidden sm:block"
+                  whileHover={{ scale: 1.02 }}
+                >
+                  RediGNN
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-primary/50 group-hover:w-full transition-all duration-300"></span>
+                </motion.h2>
+              </a>
+            </Link>
           </div>
 
           {/* Middle section - Search */}
@@ -82,10 +87,23 @@ export const NavBar = () => {
             </Button>
             <ModeToggle />
             <div className="h-6 w-px bg-border/50"></div>
-            <UserNav />
+            {isLoading ? (
+              <div className="h-8 w-20 rounded-md bg-gray-200 animate-pulse"></div>
+            ) : user ? (
+              <UserNav />
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" asChild>
+                  <a href="/api/auth/login">Log In</a>
+                </Button>
+                <Button asChild>
+                  <a href="/api/auth/login">Sign Up</a>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </nav>
   );
-}; 
+};

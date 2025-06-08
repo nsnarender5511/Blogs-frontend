@@ -12,6 +12,7 @@
     "seed": "npx ts-node --project server/tsconfig.json server/seed.ts"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^4.6.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -55,7 +56,7 @@
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
     "mongoose": "^8.0.0",
-    "next": "14.1.0",
+    "next": "^14.2.25",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
