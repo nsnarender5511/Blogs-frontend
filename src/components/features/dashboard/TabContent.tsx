@@ -15,6 +15,9 @@ interface TabContentProps {
   onClearFilters: () => void;
   onRefresh: () => void;
   isLoading: boolean;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export const TabContent: React.FC<TabContentProps> = ({
@@ -26,7 +29,10 @@ export const TabContent: React.FC<TabContentProps> = ({
   onAuthorToggle,
   onClearFilters,
   onRefresh,
-  isLoading
+  isLoading,
+  loadMore,
+  hasMore,
+  isLoadingMore
 }) => {
   console.log("filteredArticles :: ", filteredArticles);
   switch (currentTab) {
@@ -51,6 +57,9 @@ export const TabContent: React.FC<TabContentProps> = ({
               articles={filteredArticles} 
               onRefresh={onRefresh} 
               isLoading={isLoading}
+              loadMore={loadMore}
+              hasMore={hasMore}
+              isLoadingMore={isLoadingMore}
             />
           </div>
         </div>

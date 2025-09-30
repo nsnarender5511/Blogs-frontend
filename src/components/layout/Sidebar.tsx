@@ -52,6 +52,7 @@ interface SidebarProps {
     name: string;
     image?: string;
   };
+  isMobile?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -63,7 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onAuthorToggle = () => {},
   articles,
   tags,
-  userProfile = { name: "User" }
+  userProfile = { name: "User" },
+  isMobile = false
 }) => {
   const [isTagsExpanded, setIsTagsExpanded] = React.useState(true);
   const [isAuthorsExpanded, setIsAuthorsExpanded] = React.useState(false);
@@ -146,7 +148,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const INITIAL_ITEMS_TO_SHOW = 5;
 
   return (
-    <aside className="fixed left-0 top-16 bottom-0 w-[240px] bg-background/60 backdrop-blur-xl border-r transition-all duration-200 ease-out flex flex-col">
+    <aside className={cn(
+      "flex flex-col bg-background/60 backdrop-blur-xl transition-all duration-200 ease-out",
+      !isMobile && "fixed left-0 top-16 bottom-0 w-[240px] border-r",
+      isMobile && "h-full w-full"
+    )}>
       <ScrollArea className="flex-none py-2">
         <nav className="flex flex-col gap-1 px-2">
           {tabs.map((tab) => (
@@ -155,6 +161,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               variant={currentTab === tab.value ? "secondary" : "ghost"}
               className="w-full justify-start gap-2 px-4 transition-all duration-200"
               onClick={() => onTabChange(tab.value)}
+              aria-label={`Navigate to ${tab.label}`}
+              aria-current={currentTab === tab.value ? "page" : undefined}
             >
               <tab.icon className="h-4 w-4 shrink-0" />
               <span>{tab.label}</span>
@@ -176,6 +184,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               variant="ghost"
               className="w-full justify-between px-4 mb-2"
               onClick={() => setIsTagsExpanded(!isTagsExpanded)}
+              aria-expanded={isTagsExpanded}
+              aria-controls="tags-filter"
+              aria-label="Toggle tags filter"
             >
               <div className="flex items-center gap-2">
                 <Tags className="h-4 w-4" />
@@ -192,7 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               animate={{ height: isTagsExpanded ? "auto" : 0, opacity: isTagsExpanded ? 1 : 0 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-1 px-2">
+              <div id="tags-filter" className="flex flex-col gap-1 px-2" role="group" aria-label="Filter by tags">
                 {tags.slice(0, showAllTags ? undefined : INITIAL_ITEMS_TO_SHOW).map((tag) => {
                   const count = getTagCount(tag);
                   const isSelected = selectedTags.includes(tag);
@@ -248,6 +259,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               variant="ghost"
               className="w-full justify-between px-4 mb-2"
               onClick={() => setIsAuthorsExpanded(!isAuthorsExpanded)}
+              aria-expanded={isAuthorsExpanded}
+              aria-controls="authors-filter"
+              aria-label="Toggle authors filter"
             >
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -264,7 +278,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               animate={{ height: isAuthorsExpanded ? "auto" : 0, opacity: isAuthorsExpanded ? 1 : 0 }}
               className="overflow-hidden"
             >
-              <div className="flex flex-col gap-1 px-2">
+              <div id="authors-filter" className="flex flex-col gap-1 px-2" role="group" aria-label="Filter by authors">
                 {uniqueAuthorsWithUrls
                   .slice(0, showAllAuthors ? undefined : INITIAL_ITEMS_TO_SHOW)
                   .map(({ name: author, baseUrl }) => {

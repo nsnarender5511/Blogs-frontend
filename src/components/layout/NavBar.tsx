@@ -1,16 +1,44 @@
 "use client"
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
-import { Layout, Search, Bell } from 'lucide-react';
+import { Layout, Search, Bell, X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/common/ModeToggle";
 import { UserNav } from "@/components/common/UserNav";
 import { cn } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
 
-export const NavBar = () => {
+interface NavBarProps {
+  onSearch?: (query: string) => void;
+}
+
+export const NavBar: React.FC<NavBarProps> = ({ onSearch }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  useEffect(() => {
+    if (debouncedSearchQuery !== undefined && onSearch) {
+      onSearch(debouncedSearchQuery);
+      setIsSearching(false);
+    }
+  }, [debouncedSearchQuery, onSearch]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    if (value) {
+      setIsSearching(true);
+    }
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    if (onSearch) {
+      onSearch('');
+    }
+  }, [onSearch]);
 
   return (
     <nav className="fixed top-0 z-50 w-full border-b glass-effect backdrop-blur-lg bg-background/80">
@@ -43,12 +71,24 @@ export const NavBar = () => {
               <Input
                 type="text"
                 placeholder="Search articles, topics, or tags..."
-                className="w-full h-9 pl-9 pr-4 glass-effect transition-all duration-300 border-muted/50 focus:border-primary/50 hover:border-primary/30 focus:ring-2 focus:ring-primary/20 rounded-full bg-background/50"
+                className="w-full h-9 pl-9 pr-10 glass-effect transition-all duration-300 border-muted/50 focus:border-primary/50 hover:border-primary/30 focus:ring-2 focus:ring-primary/20 rounded-full bg-background/50"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                aria-label="Search articles"
               />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 hover:bg-muted/80"
+                  onClick={handleClearSearch}
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <AnimatePresence>
-                {searchQuery && (
+                {isSearching && searchQuery && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

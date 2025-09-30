@@ -6,18 +6,31 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { ArticleCard } from './ArticleCard';
 import { Article } from '@/types/article';
+import { SkeletonGrid } from '@/components/common/SkeletonCard';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
 
 interface ArticleFeedProps {
   articles: Article[];
   onRefresh: () => void;
   isLoading?: boolean;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
 }
 
 export const ArticleFeed: React.FC<ArticleFeedProps> = ({ 
   articles, 
   onRefresh,
-  isLoading = false 
+  isLoading = false,
+  loadMore,
+  hasMore = false,
+  isLoadingMore = false
 }) => {
+  const loadMoreRef = useInfiniteScroll({
+    callback: loadMore || (() => {}),
+    hasMore,
+    loading: isLoadingMore
+  });
   // Group articles into three columns with balanced heights
   const groupedArticles = React.useMemo(() => {
     const columns: Article[][] = [[], [], []];
@@ -42,11 +55,7 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
   }, [articles]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <SkeletonGrid count={9} />;
   }
 
   return (
@@ -72,7 +81,7 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
         ))}
         {articles.length === 0 && (
           <div className="col-span-3 flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-muted-foreground mb-4">No articles found with the selected tags.</p>
+            <p className="text-muted-foreground mb-4">No articles found with the selected filters.</p>
             <Button 
               variant="outline" 
               onClick={onRefresh}
@@ -84,6 +93,30 @@ export const ArticleFeed: React.FC<ArticleFeedProps> = ({
           </div>
         )}
       </div>
+      
+      {/* Load More Trigger */}
+      {hasMore && (
+        <div 
+          ref={loadMoreRef}
+          className="flex justify-center py-8"
+        >
+          {isLoadingMore ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading more articles...</span>
+            </div>
+          ) : (
+            <Button 
+              variant="outline" 
+              onClick={loadMore}
+              className="gap-2"
+            >
+              Load More
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }; 

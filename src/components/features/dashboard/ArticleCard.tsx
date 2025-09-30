@@ -4,10 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookMarked, Clock, BookOpen } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Clock, BookOpen, Share2, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { Article } from '@/types/article';
 import { cn } from "@/lib/utils";
+import { useBookmarks } from '@/hooks/useBookmarks';
+import { toast } from 'sonner';
+import { OptimizedImage } from '@/components/common/OptimizedImage';
 
 interface ArticleCardProps {
   article: Article;
@@ -64,7 +67,29 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const [isMounted, setIsMounted] = useState(false);
   const [showImage, setShowImage] = useState(false);
+  const { isBookmarked, toggleBookmark } = useBookmarks();
   const badge = getDifficultyBadge(article.difficulty);
+  const bookmarked = isBookmarked(article._id);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: article.title,
+          text: article.excerpt,
+          url: article.link
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      navigator.clipboard.writeText(article.link);
+      toast.success('Link copied to clipboard');
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,11 +118,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="relative h-8 w-8 rounded-full overflow-hidden">
-              <img
+              <OptimizedImage
                 src={article.author.avatar}
                 alt={article.author.name}
                 className="object-cover"
-                loading="lazy"
+                priority
               />
             </div>
             <div>
@@ -146,15 +171,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
           {article.image && showImage && (
             <div className="relative w-full">
               <div className="aspect-video w-full overflow-hidden">
-                <img
+                <OptimizedImage
                   src={article.image}
                   alt={article.title}
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                  }}
+                  aspectRatio="16/9"
+                  onError={() => setShowImage(false)}
                 />
               </div>
               <div className="absolute top-2 right-2">
@@ -175,11 +197,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 flex-1">
                 <div className="relative h-8 w-8 rounded-full overflow-hidden">
-                  <img
+                  <OptimizedImage
                     src={article.author.avatar}
                     alt={article.author.name}
                     className="object-cover"
-                    loading="lazy"
+                    priority
                   />
                 </div>
                 <div>
@@ -210,18 +232,45 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
                 </span>
               ))}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="hover:bg-primary/10 hover:text-primary transition-all duration-300 gap-1 rounded-full group/btn"
+                className={cn(
+                  "hover:bg-primary/10 transition-all duration-300 gap-1 rounded-full group/btn",
+                  bookmarked && "text-primary bg-primary/10"
+                )}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  toggleBookmark(article._id, article.title, article.author.name);
                 }}
+                aria-label={bookmarked ? "Remove bookmark" : "Add bookmark"}
               >
-                <BookMarked className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
-                <span className="font-medium group-hover/btn:text-primary">{article.saves}</span>
+                {bookmarked ? (
+                  <BookmarkCheck className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
+                ) : (
+                  <Bookmark className="h-4 w-4 transition-transform duration-300 group-hover/btn:scale-110" />
+                )}
+                <span className="font-medium">{article.saves + (bookmarked ? 1 : 0)}</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hover:bg-primary/10 transition-all duration-300 rounded-full"
+                onClick={handleShare}
+                aria-label="Share article"
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="hover:bg-primary/10 transition-all duration-300 rounded-full"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="Open in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
               </Button>
             </div>
           </div>
